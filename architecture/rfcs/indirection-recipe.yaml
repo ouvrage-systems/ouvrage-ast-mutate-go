@@ -1,0 +1,37 @@
+version: "ouvrage.io/v1alpha1"
+kind: MutationPlaybook
+metadata:
+  name: "environment-indirection-example"
+
+vars:
+  env:
+    type: "string"
+    required: true # e.g. "prod" or "dev"
+  prod_replicas:
+    type: "int"
+    default: 5
+  dev_replicas:
+    type: "int"
+    default: 1
+  target_label_key:
+    type: "string"
+    default: "deployment-tier"
+
+mutations:
+  # 1. Indirection in Value (Interpolated string with nested curly braces)
+  # The engine evaluates the inner token {vars.env} first to get "prod" or "dev",
+  # resulting in {vars.prod_replicas} or {vars.dev_replicas}, which evaluates to the final int.
+  - name: "Set replicas count dynamically based on env name"
+    action: "set"
+    properties:
+      target: "$.spec.replicas"
+      value: "{vars.{vars.env}_replicas}"
+
+  # 2. Indirection in Target Path (Unified syntax using curly braces {} for dynamic keys)
+  # The engine resolves the identifier {vars.target_label_key} (which evaluates to "deployment-tier")
+  # and targets $.metadata.labels.deployment-tier at runtime.
+  - name: "Set env label using a dynamic key name"
+    action: "set"
+    properties:
+      target: "$.metadata.labels.{vars.target_label_key}"
+      value: "critical-app"

@@ -1,0 +1,38 @@
+# This file showcases a complex condition written in both
+# String (High-DX) mode and Structured Schema (Machine/GitOps) mode.
+
+examples:
+  # 1. Human-Readable String Mode
+  - name: "Scale resources in prod/staging for critical apps - String Mode"
+    action: "set"
+    properties:
+      target: "$.spec.template.spec.containers(name=web).resources.limits.cpu"
+      value: "2"
+    if: "(vars.env == 'prod' or vars.env == 'staging') and $.metadata.name != 'legacy-auth' and ($.spec.replicas > 2 or $.metadata.labels.tier == 'critical')"
+
+  # 2. Machine-Readable Structured Schema Mode
+  - name: "Scale resources in prod/staging for critical apps - Schema Mode"
+    action: "set"
+    properties:
+      target: "$.spec.template.spec.containers(name=web).resources.limits.cpu"
+      value: "2"
+    if:
+      condition:
+        all:
+          - any:
+              - operator: "equals"
+                left: "vars.env"
+                right: "prod"
+              - operator: "equals"
+                left: "vars.env"
+                right: "staging"
+          - operator: "not_equals"
+            left: "$.metadata.name"
+            right: "legacy-auth"
+          - any:
+              - operator: "greater_than"
+                left: "$.spec.replicas"
+                right: 2
+              - operator: "equals"
+                left: "$.metadata.labels.tier"
+                right: "critical"
